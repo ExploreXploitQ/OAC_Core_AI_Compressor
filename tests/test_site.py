@@ -45,19 +45,35 @@ class SiteParser(HTMLParser):
         self.title = ""
         self.html_lang = ""
         self.section_text: dict[str, list[str]] = {}
+        self.section_headings: dict[str, list[str]] = {}
+        self.project_cards: list[dict[str, str]] = []
+        self.team_members: list[str] = []
+        self.attribute_text: list[str] = []
         self._section_stack: list[str] = []
         self._in_title = False
+        self._heading: list[str] | None = None
+        self._project_card: dict[str, str] | None = None
+        self._team_member: list[str] | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = {key: value or "" for key, value in attrs}
         self.tags.append(tag)
         if tag == "title":
             self._in_title = True
+        if any(values.get(key) for key in ("alt", "aria-label", "title", "placeholder")):
+            self.attribute_text.extend(values[key] for key in ("alt", "aria-label", "title", "placeholder") if values.get(key))
         if tag == "html":
             self.html_lang = values.get("lang", "")
         if tag == "section" and values.get("id"):
             self._section_stack.append(values["id"])
             self.section_text.setdefault(values["id"], [])
+        if tag in {"h1", "h2", "h3", "h4", "h5", "h6"} and self._section_stack:
+            self._heading = [self._section_stack[-1], ""]
+        if tag == "article" and "project-card" in values.get("class", "").split():
+            self._project_card = {"data-project": values.get("data-project", ""), "text": ""}
+            self.project_cards.append(self._project_card)
+        if tag == "li" and "team-member" in values.get("class", "").split():
+            self._team_member = [""]
         if values.get("id"):
             self.ids.add(values["id"])
         for key in ("href", "src"):
@@ -74,12 +90,28 @@ class SiteParser(HTMLParser):
             self.text.append(value)
             if self._in_title:
                 self.title += value
+            if self._heading is not None:
+                self._heading[1] += value
+            if self._project_card is not None:
+                self._project_card["text"] += value
+            if self._team_member is not None:
+                self._team_member[0] += value
             if self._section_stack:
                 self.section_text[self._section_stack[-1]].append(value)
 
     def handle_endtag(self, tag: str) -> None:
         if tag == "title":
             self._in_title = False
+        if tag in {"h1", "h2", "h3", "h4", "h5", "h6"} and self._heading is not None:
+            section, heading = self._heading
+            self.section_headings.setdefault(section, []).append(heading.strip())
+            self._heading = None
+        if tag == "article" and self._project_card is not None:
+            self._project_card["text"] = self._project_card["text"].strip()
+            self._project_card = None
+        if tag == "li" and self._team_member is not None:
+            self.team_members.append(self._team_member[0].strip())
+            self._team_member = None
         if tag == "section" and self._section_stack:
             self._section_stack.pop()
 
@@ -127,19 +159,19 @@ class StaticSiteTests(unittest.TestCase):
         self.assertIn("nav", parser.tags)
         self.assertIn("main", parser.tags)
         self.assertIn("footer", parser.tags)
-        self.assertIn(
-            "Deep Learning for Artifact Mitigation in Lossy-Compressed Scientific Data",
-            " ".join(parser.section_text["award"]),
-        )
-        team_copy = " ".join(parser.section_text["team"])
         self.assertEqual(
-            ["Yang Zhang", "Xin Liang", "Yujun Feng"],
-            re.findall(r"Yang Zhang|Xin Liang|Yujun Feng", team_copy),
+            ["Deep Learning for Artifact Mitigation in Lossy-Compressed Scientific Data"],
+            parser.section_headings.get("award", []),
         )
-        projects_copy = " ".join(parser.section_text["projects"])
+        self.assertEqual(["Yang Zhang", "Xin Liang", "Yujun Feng"], parser.team_members)
         self.assertEqual(
-            ["DenseTopo-UNet", "PTU-Net"],
-            re.findall(r"DenseTopo-UNet|PTU-Net", projects_copy),
+            {"DenseTopo-UNet", "PTU-Net"},
+            {card["data-project"] for card in parser.project_cards},
+        )
+        self.assertEqual(2, len(parser.project_cards))
+        self.assertEqual(
+            {"DenseTopo-UNet", "PTU-Net"},
+            {card["text"] for card in parser.project_cards},
         )
 
     def test_local_references_are_relative_and_resolve(self) -> None:
@@ -184,7 +216,7 @@ class StaticSiteTests(unittest.TestCase):
     def test_public_page_has_no_placeholders_or_cjk(self) -> None:
         self.assert_entry_point()
         parser = self.parse_site()
-        visible_text = " ".join(parser.text)
+        visible_text = " ".join(parser.text + parser.attribute_text)
         self.assertIsNone(
             re.search(r"tbd|todo|lorem ipsum|[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]", visible_text, re.IGNORECASE)
         )
