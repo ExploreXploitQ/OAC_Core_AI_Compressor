@@ -330,7 +330,8 @@ class StaticSiteTests(unittest.TestCase):
         self.assertIn("grid-template-columns: repeat(2", tablet)
         self.assertIn(".comparison-table tbody td", tablet)
         self.assertIn(".comparison-table tbody tr", mobile)
-        self.assertIn("grid-template-columns: 1fr", mobile)
+        mobile_row = css_rule(mobile, ".comparison-table tbody tr")
+        self.assertIn("grid-template-columns: 1fr", mobile_row)
         reduced = css_media(css, "(prefers-reduced-motion: reduce)")
         self.assertIn("scroll-behavior: auto", reduced)
         self.assertIn("transition-duration", reduced)
@@ -341,12 +342,24 @@ class StaticSiteTests(unittest.TestCase):
         self.assertGreaterEqual(contrast_ratio(teal.group(1), "#ffffff"), 4.5)
         focus = css_rule(css, ":focus-visible")
         self.assertIn("outline", focus)
-        self.assertIn("outline", focus)
         self.assertRegex(focus, r"outline:[^;]*var\(--surface\)")
         layered = css_rule(css, ":is(a, [tabindex]):focus-visible")
         self.assertRegex(layered, r"box-shadow:[^;]*var\(--navy-950\)")
         colors = css_variables(css)
         self.assertGreaterEqual(contrast_ratio(colors["--surface"], colors["--navy-950"]), 3.0)
+
+        for selector in (
+            ".densetopo-card .project-dimension",
+            ".densetopo-detail .project-number",
+            ".densetopo-card .tag-list li",
+            ".comparison-table tbody td:nth-of-type(2)::before",
+        ):
+            rule = css_rule(css, selector) or css_rule(css_media(css, "(max-width: 820px)"), selector)
+            foreground = re.search(r"color:\s*(#[0-9a-fA-F]{6}|var\(--[\w-]+\))", rule)
+            self.assertIsNotNone(foreground, selector)
+            value = foreground.group(1)
+            value = colors.get(value[4:-1], value)
+            self.assertGreaterEqual(contrast_ratio(value, "#ffffff"), 4.5, selector)
 
     def test_wcag_contrast_for_teal_and_focus_indicator(self) -> None:
         css = (ROOT / "assets/css/site.css").read_text(encoding="utf-8")
