@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import functools
 import http.server
+import posixpath
 import re
 import threading
 import unittest
@@ -22,6 +23,14 @@ LOCAL_ASSETS = {
     "assets/images/ptunet-wordmark.svg",
     "assets/images/ptunet-architecture.svg",
 }
+EXPECTED_PROJECT_LINKS = {
+    "https://github.com/ExploreXploitQ/DenseTopo-UNet",
+    "https://github.com/ExploreXploitQ/DenseTopo-UNet/blob/main/docs/architecture.md",
+    "https://github.com/ExploreXploitQ/DenseTopo-UNet/blob/main/docs/usage.md",
+    "https://github.com/ExploreXploitQ/PTU-Net",
+    "https://github.com/ExploreXploitQ/PTU-Net/blob/main/docs/architecture.md",
+    "https://github.com/ExploreXploitQ/PTU-Net/blob/main/docs/usage.md",
+}
 
 
 class SiteParser(HTMLParser):
@@ -33,10 +42,22 @@ class SiteParser(HTMLParser):
         self.anchors: list[dict[str, str]] = []
         self.images: list[dict[str, str]] = []
         self.text: list[str] = []
+        self.title = ""
+        self.html_lang = ""
+        self.section_text: dict[str, list[str]] = {}
+        self._section_stack: list[str] = []
+        self._in_title = False
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = {key: value or "" for key, value in attrs}
         self.tags.append(tag)
+        if tag == "title":
+            self._in_title = True
+        if tag == "html":
+            self.html_lang = values.get("lang", "")
+        if tag == "section" and values.get("id"):
+            self._section_stack.append(values["id"])
+            self.section_text.setdefault(values["id"], [])
         if values.get("id"):
             self.ids.add(values["id"])
         for key in ("href", "src"):
@@ -49,7 +70,38 @@ class SiteParser(HTMLParser):
 
     def handle_data(self, data: str) -> None:
         if data.strip():
-            self.text.append(data.strip())
+            value = data.strip()
+            self.text.append(value)
+            if self._in_title:
+                self.title += value
+            if self._section_stack:
+                self.section_text[self._section_stack[-1]].append(value)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == "title":
+            self._in_title = False
+        if tag == "section" and self._section_stack:
+            self._section_stack.pop()
+
+    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        self.handle_starttag(tag, attrs)
+        self.handle_endtag(tag)
+
+    def handle_entityref(self, name: str) -> None:
+        self.handle_data(f"&{name};")
+
+    def handle_charref(self, name: str) -> None:
+        self.handle_data(f"&#{name};")
+
+    def handle_comment(self, data: str) -> None:
+        pass
+
+    def handle_decl(self, decl: str) -> None:
+        pass
+
+    def handle_pi(self, data: str) -> None:
+        pass
+
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
@@ -70,28 +122,46 @@ class StaticSiteTests(unittest.TestCase):
     def test_page_exposes_semantic_award_and_project_sections(self) -> None:
         parser = self.parse_site()
         self.assertTrue({"award", "projects", "research", "team"} <= parser.ids)
+        self.assertEqual("en", parser.html_lang)
         self.assertIn("nav", parser.tags)
         self.assertIn("main", parser.tags)
         self.assertIn("footer", parser.tags)
-        copy = " ".join(parser.text)
-        self.assertIn("Deep Learning for Artifact Mitigation", copy)
-        for name in ("Yang Zhang", "Xin Liang", "Yujun Feng"):
-            self.assertIn(name, copy)
-        for project in ("DenseTopo-UNet", "PTU-Net"):
-            self.assertIn(project, copy)
+        self.assertIn(
+            "Deep Learning for Artifact Mitigation in Lossy-Compressed Scientific Data",
+            " ".join(parser.section_text["award"]),
+        )
+        team_copy = " ".join(parser.section_text["team"])
+        self.assertEqual(
+            ["Yang Zhang", "Xin Liang", "Yujun Feng"],
+            re.findall(r"Yang Zhang|Xin Liang|Yujun Feng", team_copy),
+        )
+        projects_copy = " ".join(parser.section_text["projects"])
+        self.assertEqual(
+            ["DenseTopo-UNet", "PTU-Net"],
+            re.findall(r"DenseTopo-UNet|PTU-Net", projects_copy),
+        )
 
     def test_local_references_are_relative_and_resolve(self) -> None:
         parser = self.parse_site()
         broken: list[str] = []
         for reference in parser.references:
             clean = reference.split("#", maxsplit=1)[0]
-            if not clean or clean.startswith(("https://", "http://", "mailto:")):
+            if not clean:
                 continue
-            self.assertFalse(clean.startswith("/"), clean)
+            if clean in EXPECTED_PROJECT_LINKS:
+                continue
+            self.assertFalse(
+                clean.startswith(("/", "//", "http://", "https://", "mailto:", "data:")),
+                clean,
+            )
+            self.assertFalse(posixpath.normpath(clean).startswith(".."), clean)
             if not (ROOT / clean).is_file():
                 broken.append(clean)
         self.assertEqual([], broken)
-        self.assertEqual(set(), LOCAL_ASSETS - {str(path.relative_to(ROOT)) for path in ROOT.rglob("*") if path.is_file()})
+        self.assertEqual(set(), LOCAL_ASSETS - set(parser.references))
+        self.assertEqual(set(), EXPECTED_PROJECT_LINKS - set(parser.references))
+        for image in parser.images:
+            self.assertIn(image.get("src", ""), LOCAL_ASSETS)
 
     def test_new_tab_links_do_not_expose_the_opener(self) -> None:
         parser = self.parse_site()
@@ -112,8 +182,11 @@ class StaticSiteTests(unittest.TestCase):
 
     def test_public_page_has_no_placeholders_or_cjk(self) -> None:
         self.assert_entry_point()
-        text = INDEX.read_text(encoding="utf-8")
-        self.assertIsNone(re.search(r"TBD|TODO|Lorem ipsum|[\u3400-\u9fff]", text))
+        parser = self.parse_site()
+        visible_text = " ".join(parser.text)
+        self.assertIsNone(
+            re.search(r"tbd|todo|lorem ipsum|[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]", visible_text, re.IGNORECASE)
+        )
 
     def test_site_is_served_from_the_repository_root(self) -> None:
         self.assert_entry_point()
