@@ -123,6 +123,7 @@ class StaticSiteTests(unittest.TestCase):
         parser = self.parse_site()
         self.assertTrue({"award", "projects", "research", "team"} <= parser.ids)
         self.assertEqual("en", parser.html_lang)
+        self.assertEqual("Deep Learning for Artifact Mitigation | NSF Research Portfolio", parser.title)
         self.assertIn("nav", parser.tags)
         self.assertIn("main", parser.tags)
         self.assertIn("footer", parser.tags)
