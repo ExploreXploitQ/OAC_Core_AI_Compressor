@@ -53,6 +53,7 @@ class SiteParser(HTMLParser):
         self._in_title = False
         self._heading: list[str] | None = None
         self._project_card: dict[str, str] | None = None
+        self._project_heading: list[str] | None = None
         self._team_member: list[str] | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
@@ -69,6 +70,8 @@ class SiteParser(HTMLParser):
             self.section_text.setdefault(values["id"], [])
         if tag in {"h1", "h2", "h3", "h4", "h5", "h6"} and self._section_stack:
             self._heading = [self._section_stack[-1], ""]
+        if tag == "h3" and self._project_card is not None:
+            self._project_heading = [""]
         if tag == "article" and "project-card" in values.get("class", "").split():
             self._project_card = {"data-project": values.get("data-project", ""), "text": ""}
             self.project_cards.append(self._project_card)
@@ -94,6 +97,8 @@ class SiteParser(HTMLParser):
                 self._heading[1] += value
             if self._project_card is not None:
                 self._project_card["text"] += value
+            if self._project_heading is not None:
+                self._project_heading[0] += value
             if self._team_member is not None:
                 self._team_member[0] += value
             if self._section_stack:
@@ -106,6 +111,9 @@ class SiteParser(HTMLParser):
             section, heading = self._heading
             self.section_headings.setdefault(section, []).append(heading.strip())
             self._heading = None
+        if tag == "h3" and self._project_heading is not None and self._project_card is not None:
+            self._project_card["heading"] = self._project_heading[0].strip()
+            self._project_heading = None
         if tag == "article" and self._project_card is not None:
             self._project_card["text"] = self._project_card["text"].strip()
             self._project_card = None
@@ -171,7 +179,11 @@ class StaticSiteTests(unittest.TestCase):
         self.assertEqual(2, len(parser.project_cards))
         self.assertEqual(
             {"DenseTopo-UNet", "PTU-Net"},
-            {card["text"] for card in parser.project_cards},
+            {card["heading"] for card in parser.project_cards},
+        )
+        self.assertEqual(
+            {("DenseTopo-UNet", "DenseTopo-UNet"), ("PTU-Net", "PTU-Net")},
+            {(card["data-project"], card["heading"]) for card in parser.project_cards},
         )
 
     def test_local_references_are_relative_and_resolve(self) -> None:
