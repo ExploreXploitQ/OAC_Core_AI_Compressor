@@ -4,7 +4,7 @@ This repository contains a self-contained, English GitHub Pages site for the NSF
 
 ## Site structure
 
-The static page is served from `index.html` and uses one local stylesheet at `assets/css/site.css`. It includes an award overview, two project overview cards, detailed method sections, a shared research-scope comparison, and the participant list. There is no JavaScript runtime, build step, framework, package manager, remote font, or analytics dependency.
+The static page is served from `index.html` and uses one local stylesheet at `assets/css/site.css`. It includes an award overview, two project overview cards, detailed method sections, a shared research-scope comparison, a selected publication, and the participant list. There is no JavaScript runtime, build step, framework, package manager, remote font, or analytics dependency.
 
 ## Local preview and tests
 
@@ -23,6 +23,8 @@ python -m unittest discover -s tests -v
 ## Asset provenance
 
 The canonical award logo is stored at `assets/images/nsf-logo.png`, copied from the site owner-supplied NSF PNG. The original supplied screenshot is retained locally but ignored. Each project wordmark and architecture SVG is a stable local copy of the corresponding project asset, so the page has no runtime dependency on GitHub raw-content delivery.
+
+The publication metadata is linked to its Google Scholar record and the canonical DOI, `10.1109/IPDPS65963.2026.00024`.
 
 ## Evidence policy
 

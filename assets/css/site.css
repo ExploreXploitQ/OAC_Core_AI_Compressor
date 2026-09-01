@@ -238,6 +238,7 @@ h3 {
 .hero-actions,
 .card-links,
 .project-links,
+.publication-links,
 .site-footer p:nth-child(2) {
   display: flex;
   flex-wrap: wrap;
@@ -277,34 +278,14 @@ h3 {
   box-shadow: none;
 }
 
-.nsf-seal {
-  display: grid;
-  place-items: center;
+.nsf-logo {
   align-self: center;
-  aspect-ratio: 1;
+  justify-self: center;
+  width: min(100%, 20rem);
   max-width: 20rem;
   margin: 0 auto;
-  padding: clamp(1.25rem, 3vw, 2rem);
-  background: var(--surface);
-  border: 1px solid var(--rule);
-  border-radius: 50%;
-  box-shadow: var(--shadow);
-}
-
-.nsf-seal img {
-  width: min(100%, 14rem);
   aspect-ratio: 362 / 356;
   object-fit: contain;
-}
-
-.nsf-seal figcaption {
-  margin-top: 0.65rem;
-  color: #526a80;
-  font-size: 0.76rem;
-  font-weight: 750;
-  letter-spacing: 0.05em;
-  text-align: center;
-  text-transform: uppercase;
 }
 
 .summary-strip {
@@ -696,6 +677,62 @@ tbody tr:last-child td {
   border-bottom: 0;
 }
 
+.publications {
+  border-top: 1px solid var(--rule);
+}
+
+.publication-card {
+  max-width: 58rem;
+  margin-top: 2rem;
+  padding: clamp(1.5rem, 4vw, 2.35rem);
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-left: 0.35rem solid var(--gold-500);
+  border-radius: var(--radius-md);
+  box-shadow: 0 0.65rem 1.5rem rgb(7 26 47 / 0.05);
+}
+
+.publication-venue {
+  margin-bottom: 0.65rem;
+  color: #7a5a00;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.publication-title {
+  max-width: 48rem;
+  margin-bottom: 1rem;
+  color: var(--navy-950);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.35rem, 2.5vw, 1.85rem);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.publication-title cite {
+  font-style: normal;
+}
+
+.publication-authors,
+.publication-meta {
+  max-width: 50rem;
+  color: var(--slate-700);
+}
+
+.publication-authors strong {
+  color: var(--navy-950);
+}
+
+.publication-meta {
+  margin-bottom: 1.25rem;
+}
+
+.publication-links a {
+  font-weight: 750;
+}
+
 .team {
   padding-bottom: clamp(4rem, 8vw, 7rem);
 }
@@ -771,20 +808,11 @@ tbody tr:last-child td {
     padding-top: clamp(3.5rem, 10vw, 5.5rem);
   }
 
-  .nsf-seal {
+  .nsf-logo {
     grid-row: 1;
     justify-self: start;
     width: 10.5rem;
     margin: 0;
-    padding: 1rem;
-  }
-
-  .nsf-seal img {
-    width: 7.25rem;
-  }
-
-  .nsf-seal figcaption {
-    display: none;
   }
 
   .hero-content {

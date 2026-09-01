@@ -25,13 +25,20 @@ LOCAL_ASSETS = {
     "assets/images/ptunet-wordmark.svg",
     "assets/images/ptunet-architecture.svg",
 }
-EXPECTED_PROJECT_LINKS = {
+SCHOLAR_PUBLICATION_URL = (
+    "https://scholar.google.com/citations?view_op=view_citation&hl=en&user="
+    "egeD-DMAAAAJ&sortby=pubdate&citation_for_view=egeD-DMAAAAJ:4xDN1ZYqzskC"
+)
+PUBLICATION_DOI_URL = "https://doi.org/10.1109/IPDPS65963.2026.00024"
+EXPECTED_PUBLIC_LINKS = {
     "https://github.com/ExploreXploitQ/DenseTopo-UNet",
     "https://github.com/ExploreXploitQ/DenseTopo-UNet/blob/main/docs/architecture.md",
     "https://github.com/ExploreXploitQ/DenseTopo-UNet/blob/main/docs/usage.md",
     "https://github.com/ExploreXploitQ/PTU-Net",
     "https://github.com/ExploreXploitQ/PTU-Net/blob/main/docs/architecture.md",
     "https://github.com/ExploreXploitQ/PTU-Net/blob/main/docs/usage.md",
+    SCHOLAR_PUBLICATION_URL,
+    PUBLICATION_DOI_URL,
 }
 
 
@@ -88,6 +95,7 @@ class SiteParser(HTMLParser):
         self.attribute_text: list[str] = []
         self.all_attributes: list[dict[str, str]] = []
         self.evidence_by_detail: dict[str, list[str]] = {}
+        self.figures: list[dict[str, list[str]]] = []
         self._section_stack: list[str] = []
         self._in_title = False
         self._heading: list[str] | None = None
@@ -96,6 +104,7 @@ class SiteParser(HTMLParser):
         self._team_member: list[str] | None = None
         self._detail_id: str | None = None
         self._evidence: list[str] | None = None
+        self._figure: dict[str, list[str]] | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = {key: value or "" for key, value in attrs}
@@ -122,6 +131,8 @@ class SiteParser(HTMLParser):
             self.evidence_by_detail.setdefault(self._detail_id, [])
         if tag == "p" and "evidence-note" in values.get("class", "").split():
             self._evidence = [""]
+        if tag == "figure":
+            self._figure = {"images": [], "text": []}
         if tag == "li" and "team-member" in values.get("class", "").split():
             self._team_member = [""]
         if values.get("id"):
@@ -133,6 +144,8 @@ class SiteParser(HTMLParser):
             self.anchors.append(values)
         if tag == "img":
             self.images.append(values)
+            if self._figure is not None:
+                self._figure["images"].append(values.get("src", ""))
 
     def handle_data(self, data: str) -> None:
         if data.strip():
@@ -150,6 +163,8 @@ class SiteParser(HTMLParser):
                 self._team_member[0] += value
             if self._evidence is not None:
                 self._evidence[0] += value
+            if self._figure is not None:
+                self._figure["text"].append(value)
             if self._section_stack:
                 self.section_text[self._section_stack[-1]].append(value)
 
@@ -175,6 +190,9 @@ class SiteParser(HTMLParser):
             self._evidence = None
         if tag == "article" and self._detail_id is not None:
             self._detail_id = None
+        if tag == "figure" and self._figure is not None:
+            self.figures.append(self._figure)
+            self._figure = None
         if tag == "section" and self._section_stack:
             self._section_stack.pop()
 
@@ -222,7 +240,7 @@ class StaticSiteTests(unittest.TestCase):
 
     def test_page_exposes_semantic_award_and_project_sections(self) -> None:
         parser = self.parse_site()
-        self.assertTrue({"award", "projects", "research", "team"} <= parser.ids)
+        self.assertTrue({"award", "projects", "research", "publications", "team"} <= parser.ids)
         self.assertEqual("en", parser.html_lang)
         self.assertEqual("Deep Learning for Artifact Mitigation | NSF Research Portfolio", parser.title)
         self.assertIn("nav", parser.tags)
@@ -254,7 +272,7 @@ class StaticSiteTests(unittest.TestCase):
             clean = reference.split("#", maxsplit=1)[0]
             if not clean:
                 continue
-            if clean in EXPECTED_PROJECT_LINKS:
+            if clean in EXPECTED_PUBLIC_LINKS:
                 continue
             self.assertFalse(
                 clean.startswith(("/", "//", "http://", "https://", "mailto:", "data:")),
@@ -265,7 +283,7 @@ class StaticSiteTests(unittest.TestCase):
                 broken.append(clean)
         self.assertEqual([], broken)
         self.assertEqual(set(), LOCAL_ASSETS - set(parser.references))
-        self.assertEqual(set(), EXPECTED_PROJECT_LINKS - set(parser.references))
+        self.assertEqual(set(), EXPECTED_PUBLIC_LINKS - set(parser.references))
         for image in parser.images:
             self.assertIn(image.get("src", ""), LOCAL_ASSETS)
 
@@ -395,6 +413,16 @@ class StaticSiteTests(unittest.TestCase):
         nsf = next(image for image in parser.images if image.get("src") == "assets/images/nsf-logo.png")
         self.assertNotEqual("lazy", nsf.get("loading"))
 
+    def test_nsf_symbol_is_the_unadorned_supplied_image(self) -> None:
+        parser = self.parse_site()
+        nsf = next(image for image in parser.images if image.get("src") == "assets/images/nsf-logo.png")
+        self.assertIn("nsf-logo", nsf.get("class", "").split())
+        self.assertFalse(
+            any("assets/images/nsf-logo.png" in figure["images"] for figure in parser.figures),
+            "The NSF image must not carry a visible figure caption or badge treatment",
+        )
+        self.assertNotIn("research award context", " ".join(parser.text).lower())
+
     def test_all_tracked_public_artifacts_are_english_and_placeholder_free(self) -> None:
         tracked = subprocess.check_output(["git", "ls-files"], text=True, cwd=ROOT).splitlines()
         public = [path for path in tracked if Path(path).suffix.lower() in {".html", ".css", ".svg"} or Path(path).name.lower() == "readme.md"]
@@ -443,6 +471,26 @@ class StaticSiteTests(unittest.TestCase):
         copy = " ".join(parser.text).lower()
         self.assertIn("training-only reference and topology supervision", copy)
         self.assertIn("temporal reconstruction method", copy)
+
+    def test_publication_identifies_pu_jiao_and_verified_record(self) -> None:
+        parser = self.parse_site()
+        self.assertEqual(["Publication"], parser.section_headings.get("publications", []))
+        copy = re.sub(
+            r"\s+([,.;:])",
+            r"\1",
+            " ".join(parser.section_text.get("publications", [])),
+        )
+        self.assertIn(
+            "Mitigating Artifacts in Pre-quantization Based Scientific Data Compressors with Quantization-aware Interpolation",
+            copy,
+        )
+        self.assertIn(
+            "Pu Jiao, Sheng Di, Jiannan Tian, Mingze Xia, Xuan Wu, Yang Zhang, Xin Liang, and Franck Cappello",
+            copy,
+        )
+        self.assertIn("IPDPS 2026", copy)
+        self.assertIn(SCHOLAR_PUBLICATION_URL, parser.references)
+        self.assertIn(PUBLICATION_DOI_URL, parser.references)
 
     def test_site_has_no_javascript_external_fonts_or_remote_images(self) -> None:
         parser = self.parse_site()
