@@ -96,6 +96,8 @@ class SiteParser(HTMLParser):
         self.all_attributes: list[dict[str, str]] = []
         self.evidence_by_detail: dict[str, list[str]] = {}
         self.figures: list[dict[str, list[str]]] = []
+        self.publication_venues: list[str] = []
+        self.publication_metadata: list[str] = []
         self._section_stack: list[str] = []
         self._in_title = False
         self._heading: list[str] | None = None
@@ -105,6 +107,7 @@ class SiteParser(HTMLParser):
         self._detail_id: str | None = None
         self._evidence: list[str] | None = None
         self._figure: dict[str, list[str]] | None = None
+        self._publication_field: list[str] | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = {key: value or "" for key, value in attrs}
@@ -131,6 +134,10 @@ class SiteParser(HTMLParser):
             self.evidence_by_detail.setdefault(self._detail_id, [])
         if tag == "p" and "evidence-note" in values.get("class", "").split():
             self._evidence = [""]
+        if tag == "p" and "publication-venue" in values.get("class", "").split():
+            self._publication_field = ["venue", ""]
+        if tag == "p" and "publication-meta" in values.get("class", "").split():
+            self._publication_field = ["metadata", ""]
         if tag == "figure":
             self._figure = {"images": [], "text": []}
         if tag == "li" and "team-member" in values.get("class", "").split():
@@ -165,6 +172,8 @@ class SiteParser(HTMLParser):
                 self._evidence[0] += value
             if self._figure is not None:
                 self._figure["text"].append(value)
+            if self._publication_field is not None:
+                self._publication_field[1] += value
             if self._section_stack:
                 self.section_text[self._section_stack[-1]].append(value)
 
@@ -188,6 +197,13 @@ class SiteParser(HTMLParser):
             if self._detail_id:
                 self.evidence_by_detail[self._detail_id].append(self._evidence[0].strip())
             self._evidence = None
+        if tag == "p" and self._publication_field is not None:
+            target, value = self._publication_field
+            if target == "venue":
+                self.publication_venues.append(value.strip())
+            else:
+                self.publication_metadata.append(value.strip())
+            self._publication_field = None
         if tag == "article" and self._detail_id is not None:
             self._detail_id = None
         if tag == "figure" and self._figure is not None:
@@ -474,21 +490,26 @@ class StaticSiteTests(unittest.TestCase):
 
     def test_publication_identifies_pu_jiao_and_verified_record(self) -> None:
         parser = self.parse_site()
-        self.assertEqual(["Publication"], parser.section_headings.get("publications", []))
+        title = "Mitigating Artifacts in Pre-quantization Based Scientific Data Compressors with Quantization-aware Interpolation"
+        self.assertEqual(["Publication", title], parser.section_headings.get("publications", []))
         copy = re.sub(
             r"\s+([,.;:])",
             r"\1",
             " ".join(parser.section_text.get("publications", [])),
         )
         self.assertIn(
-            "Mitigating Artifacts in Pre-quantization Based Scientific Data Compressors with Quantization-aware Interpolation",
+            title,
             copy,
         )
         self.assertIn(
             "Pu Jiao, Sheng Di, Jiannan Tian, Mingze Xia, Xuan Wu, Yang Zhang, Xin Liang, and Franck Cappello",
             copy,
         )
-        self.assertIn("IPDPS 2026", copy)
+        self.assertEqual(["IPDPS 2026 · IEEE"], parser.publication_venues)
+        self.assertEqual(
+            ["Proceedings of the 40th IEEE International Parallel and Distributed Processing Symposium, pages 144–158, 2026."],
+            parser.publication_metadata,
+        )
         self.assertIn(SCHOLAR_PUBLICATION_URL, parser.references)
         self.assertIn(PUBLICATION_DOI_URL, parser.references)
 
