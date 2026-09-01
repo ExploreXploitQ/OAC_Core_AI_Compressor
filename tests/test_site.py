@@ -44,6 +44,32 @@ def contrast_ratio(first: str, second: str) -> float:
     return (lighter + 0.05) / (darker + 0.05)
 
 
+def css_rule(css: str, selector: str) -> str:
+    match = re.search(re.escape(selector) + r"\s*\{([^{}]*)\}", css)
+    return match.group(1) if match else ""
+
+
+def css_media(css: str, query: str) -> str:
+    start = css.find("@media " + query)
+    if start < 0:
+        return ""
+    opening = css.find("{", start)
+    depth = 0
+    for index in range(opening, len(css)):
+        if css[index] == "{":
+            depth += 1
+        elif css[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return css[opening + 1:index]
+    return ""
+
+
+def css_variables(css: str) -> dict[str, str]:
+    root = css_rule(css, ":root")
+    return dict(re.findall(r"(--[\w-]+):\s*(#[0-9a-fA-F]{6})", root))
+
+
 class SiteParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
@@ -60,15 +86,20 @@ class SiteParser(HTMLParser):
         self.project_cards: list[dict[str, str]] = []
         self.team_members: list[str] = []
         self.attribute_text: list[str] = []
+        self.all_attributes: list[dict[str, str]] = []
+        self.evidence_by_detail: dict[str, list[str]] = {}
         self._section_stack: list[str] = []
         self._in_title = False
         self._heading: list[str] | None = None
         self._project_card: dict[str, str] | None = None
         self._project_heading: list[str] | None = None
         self._team_member: list[str] | None = None
+        self._detail_id: str | None = None
+        self._evidence: list[str] | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = {key: value or "" for key, value in attrs}
+        self.all_attributes.append(values)
         self.tags.append(tag)
         if tag == "title":
             self._in_title = True
@@ -86,6 +117,11 @@ class SiteParser(HTMLParser):
         if tag == "article" and "project-card" in values.get("class", "").split():
             self._project_card = {"data-project": values.get("data-project", ""), "text": ""}
             self.project_cards.append(self._project_card)
+        if tag == "article" and "project-detail" in values.get("class", "").split():
+            self._detail_id = values.get("id", "")
+            self.evidence_by_detail.setdefault(self._detail_id, [])
+        if tag == "p" and "evidence-note" in values.get("class", "").split():
+            self._evidence = [""]
         if tag == "li" and "team-member" in values.get("class", "").split():
             self._team_member = [""]
         if values.get("id"):
@@ -112,6 +148,8 @@ class SiteParser(HTMLParser):
                 self._project_heading[0] += value
             if self._team_member is not None:
                 self._team_member[0] += value
+            if self._evidence is not None:
+                self._evidence[0] += value
             if self._section_stack:
                 self.section_text[self._section_stack[-1]].append(value)
 
@@ -131,6 +169,12 @@ class SiteParser(HTMLParser):
         if tag == "li" and self._team_member is not None:
             self.team_members.append(self._team_member[0].strip())
             self._team_member = None
+        if tag == "p" and self._evidence is not None:
+            if self._detail_id:
+                self.evidence_by_detail[self._detail_id].append(self._evidence[0].strip())
+            self._evidence = None
+        if tag == "article" and self._detail_id is not None:
+            self._detail_id = None
         if tag == "section" and self._section_stack:
             self._section_stack.pop()
 
@@ -281,15 +325,40 @@ class StaticSiteTests(unittest.TestCase):
         self.assertIn("assets/css/site.css", LOCAL_ASSETS)
         for token in (".skip-link", ":focus-visible", "outline", "@media (max-width: 820px)", "@media (max-width: 560px)", "@media (prefers-reduced-motion: reduce)"):
             self.assertIn(token, css)
-        self.assertRegex(css, r"@media \(max-width: 560px\)[\s\S]*?grid-template-columns:\s*1fr")
-        self.assertRegex(css, r"@media \(prefers-reduced-motion: reduce\)[\s\S]*?transition-duration:\s*0\.01ms")
+        tablet, mobile = css_media(css, "(max-width: 820px)"), css_media(css, "(max-width: 560px)")
+        self.assertIn(".comparison-table tbody tr", tablet)
+        self.assertIn("grid-template-columns: repeat(2", tablet)
+        self.assertIn(".comparison-table tbody td", tablet)
+        self.assertIn(".comparison-table tbody tr", mobile)
+        self.assertIn("grid-template-columns: 1fr", mobile)
+        reduced = css_media(css, "(prefers-reduced-motion: reduce)")
+        self.assertIn("scroll-behavior: auto", reduced)
+        self.assertIn("transition-duration", reduced)
         self.assertRegex(css, r"--teal-600:\s*#[0-9a-fA-F]{6}")
-        self.assertRegex(css, r":focus-visible[\s\S]*?outline:\s*[^;]*")
+        teal_rule = css_rule(css, ".densetopo-card .project-dimension")
+        teal = re.search(r"color:\s*(#[0-9a-fA-F]{6})", teal_rule)
+        self.assertIsNotNone(teal)
+        self.assertGreaterEqual(contrast_ratio(teal.group(1), "#ffffff"), 4.5)
+        focus = css_rule(css, ":focus-visible")
+        self.assertIn("outline", focus)
+        self.assertIn("outline", focus)
+        self.assertRegex(focus, r"outline:[^;]*var\(--surface\)")
+        layered = css_rule(css, ":is(a, [tabindex]):focus-visible")
+        self.assertRegex(layered, r"box-shadow:[^;]*var\(--navy-950\)")
+        colors = css_variables(css)
+        self.assertGreaterEqual(contrast_ratio(colors["--surface"], colors["--navy-950"]), 3.0)
 
     def test_wcag_contrast_for_teal_and_focus_indicator(self) -> None:
-        self.assertGreaterEqual(contrast_ratio("#0d8f83", "#ffffff"), 3.0)
-        self.assertGreaterEqual(contrast_ratio("#0d8f83", "#f5f3ed"), 3.0)
-        self.assertGreaterEqual(contrast_ratio("#ffffff", "#071a2f"), 3.0)
+        css = (ROOT / "assets/css/site.css").read_text(encoding="utf-8")
+        teal_rule = css_rule(css, ".densetopo-card .project-dimension")
+        teal = re.search(r"color:\s*(#[0-9a-fA-F]{6})", teal_rule).group(1)
+        self.assertGreaterEqual(contrast_ratio(teal, "#ffffff"), 4.5)
+        self.assertGreaterEqual(contrast_ratio(teal, "#f5f3ed"), 4.5)
+        steps = css_rule(css, ".densetopo-detail .method-flow li::before")
+        bg_match = re.search(r"background:\s*(#[0-9a-fA-F]{6}|var\(--[\w-]+\))", steps)
+        bg = bg_match.group(1)
+        bg = css_variables(css).get(bg[4:-1], bg)
+        self.assertGreaterEqual(contrast_ratio("#ffffff", bg), 4.5)
 
     def test_image_dimensions_loading_and_hero_treatment(self) -> None:
         parser = self.parse_site()
@@ -327,6 +396,7 @@ class StaticSiteTests(unittest.TestCase):
             self.assertFalse(prohibited.search(path), path)
             self.assertNotIn("__pycache__", path)
             self.assertNotIn("Screenshot", path)
+            self.assertFalse(path.startswith(".artifacts/"), path)
 
     def test_site_serves_from_parent_path_with_all_assets(self) -> None:
         self.assert_entry_point()
@@ -352,16 +422,22 @@ class StaticSiteTests(unittest.TestCase):
 
     def test_project_evidence_notes_are_present(self) -> None:
         parser = self.parse_site()
+        self.assertEqual({"densetopo", "ptunet"}, set(parser.evidence_by_detail))
+        for detail, notes in parser.evidence_by_detail.items():
+            self.assertEqual(1, len(notes), detail)
+            self.assertIn("alpha research software", notes[0].lower())
+            self.assertIn("evaluation pending", notes[0].lower())
         copy = " ".join(parser.text).lower()
-        self.assertGreaterEqual(copy.count("alpha research software"), 2)
-        self.assertGreaterEqual(copy.count("evaluation pending"), 2)
         self.assertIn("training-only reference and topology supervision", copy)
         self.assertIn("temporal reconstruction method", copy)
 
     def test_site_has_no_javascript_external_fonts_or_remote_images(self) -> None:
         parser = self.parse_site()
         self.assertNotIn("script", parser.tags)
+        css = (ROOT / "assets/css/site.css").read_text(encoding="utf-8")
+        self.assertNotRegex(css, r"@import\b|@font-face\b|url\(\s*[\"']?(?:https?:|//|data:)")
         self.assertFalse(any("fonts.googleapis" in value for value in parser.references))
+        self.assertFalse(any(key.lower().startswith("on") for attrs in parser.all_attributes for key in attrs))
         self.assertTrue(all(not image.get("src", "").startswith(("http:", "https:", "//", "data:")) for image in parser.images))
 
 
