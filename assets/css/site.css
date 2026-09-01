@@ -551,7 +551,7 @@ h3 {
 }
 
 .densetopo-detail .method-flow li::before {
-  background: var(--teal-600);
+  background: #076d64;
 }
 
 .capability-list {
