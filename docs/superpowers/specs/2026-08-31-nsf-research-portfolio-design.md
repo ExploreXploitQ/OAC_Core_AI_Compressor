@@ -1,7 +1,7 @@
 # NSF Research Portfolio Website Design
 
-**Date:** 2026-08-31  
-**Status:** Approved for implementation  
+**Date:** 2026-08-31
+**Status:** Approved for implementation
 **Repository:** `ExploreXploitQNSF.github.io`
 
 ## 1. Purpose
