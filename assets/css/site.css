@@ -58,8 +58,12 @@ a:hover {
 }
 
 :focus-visible {
-  outline: 0.2rem solid var(--gold-500);
-  outline-offset: 0.24rem;
+  outline: 0.18rem solid var(--surface);
+  outline-offset: 0.18rem;
+}
+
+:is(a, [tabindex]):focus-visible {
+  box-shadow: 0 0 0 0.38rem var(--navy-950);
 }
 
 [id] {
@@ -411,7 +415,7 @@ h3 {
 }
 
 .densetopo-card .project-dimension {
-  color: var(--teal-600);
+  color: #076d64;
 }
 
 .ptunet-card .project-dimension {
@@ -487,7 +491,7 @@ h3 {
 }
 
 .densetopo-detail .project-number {
-  color: var(--teal-600);
+  color: #076d64;
 }
 
 .project-question {
@@ -880,7 +884,7 @@ tbody tr:last-child td {
   }
 
   .comparison-table tbody td:nth-of-type(2)::before {
-    color: var(--teal-600);
+    color: #076d64;
     content: "DenseTopo-UNet";
   }
 }
