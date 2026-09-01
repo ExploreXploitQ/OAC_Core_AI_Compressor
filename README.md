@@ -1,1 +1,33 @@
-# ExploreXploitQNSF.github.io
+# NSF Research Portfolio
+
+This repository contains a self-contained, English GitHub Pages site for the NSF research award **Deep Learning for Artifact Mitigation in Lossy-Compressed Scientific Data**. It presents the award and its two current research projects: DenseTopo-UNet for topology-oriented restoration of lossy-decompressed 3D scalar fields, and PTU-Net for temporal reconstruction of lossy-decompressed 2D scientific fields.
+
+## Site structure
+
+The static page is served from `index.html` and uses one local stylesheet at `assets/css/site.css`. It includes an award overview, two project overview cards, detailed method sections, a shared research-scope comparison, and the participant list. There is no JavaScript runtime, build step, framework, package manager, remote font, or analytics dependency.
+
+## Local preview and tests
+
+From the repository root, preview the site locally:
+
+```bash
+python -m http.server 8000
+```
+
+Then open `http://127.0.0.1:8000/` in a browser. Run the static-site verification suite with:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+## Asset provenance
+
+The canonical award logo is stored at `assets/images/nsf-logo.png`, copied from the site owner-supplied NSF PNG. The original supplied screenshot is retained locally but ignored. Each project wordmark and architecture SVG is a stable local copy of the corresponding project asset, so the page has no runtime dependency on GitHub raw-content delivery.
+
+## Evidence policy
+
+The page describes implementation-backed method behavior only. DenseTopo-UNet and PTU-Net are identified as **Alpha research software · evaluation pending**. The site does not claim benchmark performance, speed, generalization, pretrained weights, compressor superiority, open-source licensing, or NSF endorsement of software outcomes.
+
+## Deployment
+
+Deployment is intentionally outside this local implementation. This repository includes the static entry point and `.nojekyll` marker for GitHub Pages-compatible serving, but it does not change Pages settings, publish a release, open a pull request, or push commits.
