@@ -172,7 +172,7 @@ a:hover {
 }
 
 .eyebrow {
-  color: #a27c13;
+  color: #7a5a00;
 }
 
 h1,
@@ -295,7 +295,7 @@ h3 {
 
 .nsf-seal figcaption {
   margin-top: 0.65rem;
-  color: var(--slate-500);
+  color: #526a80;
   font-size: 0.76rem;
   font-weight: 750;
   letter-spacing: 0.05em;
@@ -395,6 +395,7 @@ h3 {
 
 .ptunet-card {
   border-top-color: var(--blue-500);
+  border-right: 0.35rem solid var(--gold-500);
 }
 
 .project-wordmark {
@@ -415,6 +416,15 @@ h3 {
 
 .ptunet-card .project-dimension {
   color: var(--blue-700);
+}
+
+.ptunet-detail .project-number::after {
+  display: inline-block;
+  width: 2.4rem;
+  height: 0.2rem;
+  margin: 0 0 0.2rem 0.65rem;
+  content: "";
+  background: var(--gold-500);
 }
 
 .project-card > p:not(.project-dimension):not(.card-links) {
@@ -609,9 +619,13 @@ h3 {
   aspect-ratio: 112 / 50;
 }
 
+.ptunet-detail .architecture-figure {
+  border-bottom: 0.3rem solid var(--gold-500);
+}
+
 .architecture-figure figcaption {
   margin-top: 0.8rem;
-  color: var(--slate-500);
+  color: #526a80;
   font-size: 0.86rem;
   line-height: 1.45;
 }
@@ -792,6 +806,83 @@ tbody tr:last-child td {
     padding-right: 1.5rem;
     padding-left: 1.5rem;
   }
+
+  .comparison-table {
+    overflow: visible;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .comparison-table table {
+    display: block;
+    min-width: 0;
+  }
+
+  .comparison-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .comparison-table tbody {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .comparison-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: hidden;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-md);
+    box-shadow: 0 0.4rem 1rem rgb(7 26 47 / 0.04);
+  }
+
+  .comparison-table tbody th {
+    grid-column: 1 / -1;
+    width: auto;
+    padding: 0.7rem 1rem;
+    color: var(--surface);
+    background: var(--navy-900);
+    border-bottom: 1px solid var(--navy-900);
+    font-size: 0.84rem;
+    letter-spacing: 0.04em;
+  }
+
+  .comparison-table tbody td {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 0;
+  }
+
+  .comparison-table tbody td + td {
+    border-left: 1px solid var(--rule);
+  }
+
+  .comparison-table tbody td::before {
+    color: var(--blue-700);
+    content: "PTU-Net";
+    font-size: 0.72rem;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .comparison-table tbody td:nth-of-type(2)::before {
+    color: var(--teal-600);
+    content: "DenseTopo-UNet";
+  }
 }
 
 @media (max-width: 560px) {
@@ -859,13 +950,13 @@ tbody tr:last-child td {
     height: 3rem;
   }
 
-  .comparison-table {
-    margin-right: -0.25rem;
+  .comparison-table tbody tr {
+    grid-template-columns: 1fr;
   }
 
-  th,
-  td {
-    padding: 0.85rem;
+  .comparison-table tbody td + td {
+    border-top: 1px solid var(--rule);
+    border-left: 0;
   }
 
   .site-footer {
