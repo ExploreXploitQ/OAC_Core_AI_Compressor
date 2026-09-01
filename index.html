@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="NSF research portfolio for deep-learning methods that mitigate artifacts in lossy-compressed scientific data.">
+  <title>Deep Learning for Artifact Mitigation | NSF Research Portfolio</title>
+  <link rel="stylesheet" href="assets/css/site.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+
+  <header class="site-header">
+    <a class="site-mark" href="#award" aria-label="NSF research portfolio award overview">NSF research portfolio</a>
+    <nav aria-label="Primary navigation">
+      <a href="#award">Award</a>
+      <a href="#projects">Projects</a>
+      <a href="#research">Research</a>
+      <a href="#team">Team</a>
+    </nav>
+  </header>
+
+  <main id="main-content">
+    <section class="hero" id="award" aria-labelledby="award-title">
+      <div class="hero-content">
+        <p class="eyebrow">NSF Research Award</p>
+        <h1 id="award-title">Deep Learning for Artifact Mitigation in Lossy-Compressed Scientific Data</h1>
+        <p class="hero-summary">A research portfolio for neural post-processing methods that address artifacts in already decompressed scientific fields.</p>
+        <p class="participants"><span>Participants</span> Yang Zhang, Xin Liang, and Yujun Feng</p>
+        <div class="hero-actions" aria-label="Award links">
+          <a class="button" href="#projects">Explore the projects</a>
+          <a class="button button-secondary" href="#research">View research scope</a>
+        </div>
+      </div>
+      <figure class="nsf-seal">
+        <img src="assets/images/nsf-logo.png" width="362" height="356" alt="National Science Foundation logo identifying the research award context">
+        <figcaption>Research award context</figcaption>
+      </figure>
+      <dl class="summary-strip" aria-label="Award summary">
+        <div>
+          <dt>Portfolio</dt>
+          <dd>Two research projects</dd>
+        </div>
+        <div>
+          <dt>Scientific fields</dt>
+          <dd>2D and 3D</dd>
+        </div>
+        <div>
+          <dt>Shared objective</dt>
+          <dd>Artifact mitigation</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="section award-overview" aria-labelledby="award-overview-title">
+      <p class="section-kicker">Award overview</p>
+      <h2 id="award-overview-title">Post-processing decompressed scientific data</h2>
+      <p>Error-bounded lossy compression can reduce data movement and storage, while decompression artifacts can affect downstream numerical and topological analysis. This program investigates neural methods that operate on fields after decompression, with complementary 2D temporal and 3D topology-oriented directions.</p>
+      <p>The projects describe implemented research software and method boundaries. Their evaluation remains pending; this portfolio does not present benchmark, generalization, or performance claims.</p>
+    </section>
+
+    <section class="section projects" id="projects" aria-labelledby="projects-title">
+      <p class="section-kicker">Current projects</p>
+      <h2 id="projects-title">Two paths through artifact mitigation</h2>
+      <div class="project-card-grid">
+        <article class="project-card densetopo-card" data-project="DenseTopo-UNet">
+          <img class="project-wordmark" src="assets/images/densetopo-wordmark.svg" width="1200" height="260" loading="lazy" alt="DenseTopo-UNet wordmark for topology restoration of lossy-decompressed 3D scalar fields">
+          <p class="project-dimension">3D scalar fields</p>
+          <h3>DenseTopo-UNet</h3>
+          <p>A gated residual 3D U-Net for restoring one already decompressed volume with topology-aware training supervision and tiled full-volume inference.</p>
+          <ul class="tag-list" aria-label="DenseTopo-UNet method tags">
+            <li>One-volume input</li>
+            <li>Gated residual</li>
+            <li>Topology-aware training</li>
+          </ul>
+          <p class="card-links"><a href="#densetopo">Read the method</a> <a href="https://github.com/ExploreXploitQ/DenseTopo-UNet" target="_blank" rel="noreferrer">View repository</a></p>
+        </article>
+
+        <article class="project-card ptunet-card" data-project="PTU-Net">
+          <img class="project-wordmark" src="assets/images/ptunet-wordmark.svg" width="760" height="180" loading="lazy" alt="PTU-Net wordmark for temporal reconstruction of lossy-decompressed 2D scientific fields">
+          <p class="project-dimension">2D scientific fields</p>
+          <h3>PTU-Net</h3>
+          <p>A temporal reconstruction method using three adjacent decompressed fields, an adaptive baseline, patch-transformer correction, gated U-Net refinement, and overlapping full-field reconstruction.</p>
+          <ul class="tag-list" aria-label="PTU-Net method tags">
+            <li>Temporal input</li>
+            <li>Patch transformer</li>
+            <li>Gated refinement</li>
+          </ul>
+          <p class="card-links"><a href="#ptunet">Read the method</a> <a href="https://github.com/ExploreXploitQ/PTU-Net" target="_blank" rel="noreferrer">View repository</a></p>
+        </article>
+      </div>
+    </section>
+
+    <article class="project-detail densetopo-detail" id="densetopo" aria-labelledby="densetopo-title">
+      <div class="project-detail-intro">
+        <p class="project-number">Project 01</p>
+        <h2 id="densetopo-title">DenseTopo-UNet</h2>
+        <p class="project-question">How can a neural post-processing model edit one decompressed 3D scalar field while reserving reference and topology information for training supervision?</p>
+        <p>DenseTopo-UNet takes one decompressed scalar volume at inference. Its gated residual 3D U-Net predicts a signed correction and spatial gate; reference values and topology labels are used during training, not as inference inputs.</p>
+        <ol class="method-flow" aria-label="DenseTopo-UNet method flow">
+          <li>One decompressed volume</li>
+          <li>Gated residual 3D U-Net</li>
+          <li>Tiled restored volume</li>
+        </ol>
+        <ul class="capability-list">
+          <li>Accepts one decompressed scalar channel at inference.</li>
+          <li>Uses correction and gate heads to form a bounded edit relative to the decompressed value.</li>
+          <li>Uses numerical and local topology-derived terms during training.</li>
+          <li>Uses context tiling that writes every output voxel once.</li>
+        </ul>
+        <p class="evidence-note">Alpha research software · evaluation pending</p>
+        <p class="project-links"><a href="https://github.com/ExploreXploitQ/DenseTopo-UNet" target="_blank" rel="noreferrer">DenseTopo-UNet repository</a> <a href="https://github.com/ExploreXploitQ/DenseTopo-UNet/blob/main/docs/architecture.md" target="_blank" rel="noreferrer">DenseTopo-UNet architecture documentation</a> <a href="https://github.com/ExploreXploitQ/DenseTopo-UNet/blob/main/docs/usage.md" target="_blank" rel="noreferrer">DenseTopo-UNet usage documentation</a></p>
+      </div>
+      <figure class="architecture-figure">
+        <img src="assets/images/densetopo-architecture.svg" width="1500" height="760" loading="lazy" alt="DenseTopo-UNet diagram showing a decompressed 3D scalar field, gated residual U-Net, and training-only supervision">
+        <figcaption>DenseTopo-UNet separates a one-volume deployment path from training-only reference and topology supervision.</figcaption>
+      </figure>
+    </article>
+
+    <article class="project-detail ptunet-detail" id="ptunet" aria-labelledby="ptunet-title">
+      <div class="project-detail-intro">
+        <p class="project-number">Project 02</p>
+        <h2 id="ptunet-title">PTU-Net</h2>
+        <p class="project-question">How can temporal context guide reconstruction of a decompressed 2D center field?</p>
+        <p>PTU-Net forms center-anchored features from three temporally adjacent decompressed fields. It combines an adaptive temporal baseline, patch-transformer correction, and a gated U-Net refinement before reconstructing a full field from overlapping patches.</p>
+        <ol class="method-flow" aria-label="PTU-Net method flow">
+          <li>Three adjacent decompressed fields</li>
+          <li>Temporal baseline and transformer correction</li>
+          <li>Gated refinement and full-field reconstruction</li>
+        </ol>
+        <ul class="capability-list">
+          <li>Builds center, previous-minus-center, and next-minus-center input features.</li>
+          <li>Combines adaptive spatial and global temporal weights for its baseline.</li>
+          <li>Applies a patch-transformer correction followed by gated U-Net refinement.</li>
+          <li>Combines overlapping patch predictions with Gaussian weighting across the full field.</li>
+        </ul>
+        <p class="evidence-note">Alpha research software · evaluation pending</p>
+        <p class="project-links"><a href="https://github.com/ExploreXploitQ/PTU-Net" target="_blank" rel="noreferrer">PTU-Net repository</a> <a href="https://github.com/ExploreXploitQ/PTU-Net/blob/main/docs/architecture.md" target="_blank" rel="noreferrer">PTU-Net architecture documentation</a> <a href="https://github.com/ExploreXploitQ/PTU-Net/blob/main/docs/usage.md" target="_blank" rel="noreferrer">PTU-Net usage documentation</a></p>
+      </div>
+      <figure class="architecture-figure">
+        <img src="assets/images/ptunet-architecture.svg" width="1120" height="500" loading="lazy" alt="PTU-Net diagram showing temporal field inputs, adaptive baseline, transformer correction, gated U-Net, and reconstruction">
+        <figcaption>PTU-Net uses temporal context and overlapping reconstruction for a 2D center field.</figcaption>
+      </figure>
+    </article>
+
+    <section class="section research-comparison" id="research" aria-labelledby="research-title">
+      <p class="section-kicker">Shared research vision</p>
+      <h2 id="research-title">Complementary research scope</h2>
+      <div class="comparison-table" role="region" aria-label="Comparison of the two research projects" tabindex="0">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Dimension</th>
+              <th scope="col">PTU-Net</th>
+              <th scope="col">DenseTopo-UNet</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Scientific field</th>
+              <td>2D</td>
+              <td>3D</td>
+            </tr>
+            <tr>
+              <th scope="row">Deployment input</th>
+              <td>Three adjacent decompressed fields</td>
+              <td>One decompressed volume</td>
+            </tr>
+            <tr>
+              <th scope="row">Primary artifact focus</th>
+              <td>Temporal and local reconstruction</td>
+              <td>False critical-point topology</td>
+            </tr>
+            <tr>
+              <th scope="row">Neural design</th>
+              <td>Temporal baseline + transformer + gated U-Net</td>
+              <td>Gated residual 3D U-Net</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>These categories describe research scope and implementation design, not comparative performance.</p>
+    </section>
+
+    <section class="section team" id="team" aria-labelledby="team-title">
+      <p class="section-kicker">Team</p>
+      <h2 id="team-title">Participants</h2>
+      <ul class="team-list">
+        <li class="team-member">Yang Zhang</li>
+        <li class="team-member">Xin Liang</li>
+        <li class="team-member">Yujun Feng</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>This website is an NSF research portfolio.</p>
+    <p><a href="https://github.com/ExploreXploitQ/DenseTopo-UNet" target="_blank" rel="noreferrer">DenseTopo-UNet repository</a> <a href="https://github.com/ExploreXploitQ/PTU-Net" target="_blank" rel="noreferrer">PTU-Net repository</a></p>
+    <p>Any opinions, findings, and conclusions presented by these research projects are those of the authors and do not necessarily reflect the views of the National Science Foundation.</p>
+  </footer>
+</body>
+</html>
