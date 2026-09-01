@@ -40,6 +40,11 @@ EXPECTED_PUBLIC_LINKS = {
     SCHOLAR_PUBLICATION_URL,
     PUBLICATION_DOI_URL,
 }
+EXPECTED_EFFORTS = {
+    "DenseTopo-UNet",
+    "PTU-Net",
+    "Quantization-Aware Interpolation",
+}
 
 
 def contrast_ratio(first: str, second: str) -> float:
@@ -91,6 +96,7 @@ class SiteParser(HTMLParser):
         self.section_text: dict[str, list[str]] = {}
         self.section_headings: dict[str, list[str]] = {}
         self.project_cards: list[dict[str, str]] = []
+        self.project_details: list[dict[str, str]] = []
         self.team_members: list[str] = []
         self.attribute_text: list[str] = []
         self.all_attributes: list[dict[str, str]] = []
@@ -98,16 +104,23 @@ class SiteParser(HTMLParser):
         self.figures: list[dict[str, list[str]]] = []
         self.publication_venues: list[str] = []
         self.publication_metadata: list[str] = []
+        self.comparison_headers: list[str] = []
+        self.comparison_rows: list[list[str]] = []
         self._section_stack: list[str] = []
         self._in_title = False
         self._heading: list[str] | None = None
         self._project_card: dict[str, str] | None = None
         self._project_heading: list[str] | None = None
+        self._project_detail: dict[str, str] | None = None
+        self._detail_heading: list[str] | None = None
         self._team_member: list[str] | None = None
         self._detail_id: str | None = None
         self._evidence: list[str] | None = None
         self._figure: dict[str, list[str]] | None = None
         self._publication_field: list[str] | None = None
+        self._comparison_area = ""
+        self._comparison_row: list[str] | None = None
+        self._comparison_cell: list[str] | None = None
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = {key: value or "" for key, value in attrs}
@@ -132,14 +145,41 @@ class SiteParser(HTMLParser):
         if tag == "article" and "project-detail" in values.get("class", "").split():
             self._detail_id = values.get("id", "")
             self.evidence_by_detail.setdefault(self._detail_id, [])
+            self._project_detail = {
+                "id": self._detail_id,
+                "data-project": values.get("data-project", ""),
+                "heading": "",
+                "has-question": "false",
+                "has-evidence": "false",
+                "has-links": "false",
+            }
+            self.project_details.append(self._project_detail)
+        if tag in {"h1", "h2", "h3", "h4", "h5", "h6"} and self._project_detail is not None:
+            self._detail_heading = [""]
+        if tag == "p" and "project-question" in values.get("class", "").split() and self._project_detail is not None:
+            self._project_detail["has-question"] = "true"
+        if tag == "p" and "project-links" in values.get("class", "").split() and self._project_detail is not None:
+            self._project_detail["has-links"] = "true"
         if tag == "p" and "evidence-note" in values.get("class", "").split():
             self._evidence = [""]
+            if self._project_detail is not None:
+                self._project_detail["has-evidence"] = "true"
         if tag == "p" and "publication-venue" in values.get("class", "").split():
             self._publication_field = ["venue", ""]
         if tag == "p" and "publication-meta" in values.get("class", "").split():
             self._publication_field = ["metadata", ""]
         if tag == "figure":
             self._figure = {"images": [], "text": []}
+        if tag == "table":
+            self._comparison_area = "table"
+        elif tag == "thead" and self._comparison_area == "table":
+            self._comparison_area = "head"
+        elif tag == "tbody" and self._comparison_area == "table":
+            self._comparison_area = "body"
+        elif tag == "tr" and self._comparison_area == "body":
+            self._comparison_row = []
+        elif tag in {"th", "td"} and self._comparison_area in {"head", "body"}:
+            self._comparison_cell = [""]
         if tag == "li" and "team-member" in values.get("class", "").split():
             self._team_member = [""]
         if values.get("id"):
@@ -166,6 +206,8 @@ class SiteParser(HTMLParser):
                 self._project_card["text"] += value
             if self._project_heading is not None:
                 self._project_heading[0] += value
+            if self._detail_heading is not None:
+                self._detail_heading[0] += value
             if self._team_member is not None:
                 self._team_member[0] += value
             if self._evidence is not None:
@@ -174,6 +216,8 @@ class SiteParser(HTMLParser):
                 self._figure["text"].append(value)
             if self._publication_field is not None:
                 self._publication_field[1] += value
+            if self._comparison_cell is not None:
+                self._comparison_cell[0] += value
             if self._section_stack:
                 self.section_text[self._section_stack[-1]].append(value)
 
@@ -187,6 +231,9 @@ class SiteParser(HTMLParser):
         if tag == "h3" and self._project_heading is not None and self._project_card is not None:
             self._project_card["heading"] = self._project_heading[0].strip()
             self._project_heading = None
+        if tag in {"h1", "h2", "h3", "h4", "h5", "h6"} and self._detail_heading is not None and self._project_detail is not None:
+            self._project_detail["heading"] = self._detail_heading[0].strip()
+            self._detail_heading = None
         if tag == "article" and self._project_card is not None:
             self._project_card["text"] = self._project_card["text"].strip()
             self._project_card = None
@@ -206,9 +253,24 @@ class SiteParser(HTMLParser):
             self._publication_field = None
         if tag == "article" and self._detail_id is not None:
             self._detail_id = None
+            self._project_detail = None
         if tag == "figure" and self._figure is not None:
             self.figures.append(self._figure)
             self._figure = None
+        if tag in {"th", "td"} and self._comparison_cell is not None:
+            value = self._comparison_cell[0].strip()
+            if self._comparison_area == "head":
+                self.comparison_headers.append(value)
+            elif self._comparison_row is not None:
+                self._comparison_row.append(value)
+            self._comparison_cell = None
+        if tag == "tr" and self._comparison_area == "body" and self._comparison_row is not None:
+            self.comparison_rows.append(self._comparison_row)
+            self._comparison_row = None
+        if tag in {"thead", "tbody"} and self._comparison_area in {"head", "body"}:
+            self._comparison_area = "table"
+        if tag == "table":
+            self._comparison_area = ""
         if tag == "section" and self._section_stack:
             self._section_stack.pop()
 
@@ -256,7 +318,7 @@ class StaticSiteTests(unittest.TestCase):
 
     def test_page_exposes_semantic_award_and_project_sections(self) -> None:
         parser = self.parse_site()
-        self.assertTrue({"award", "projects", "research", "publications", "team"} <= parser.ids)
+        self.assertTrue({"award", "projects", "research", "quantization-interpolation", "team"} <= parser.ids)
         self.assertEqual("en", parser.html_lang)
         self.assertEqual("Deep Learning for Artifact Mitigation | NSF Research Portfolio", parser.title)
         self.assertIn("nav", parser.tags)
@@ -268,18 +330,55 @@ class StaticSiteTests(unittest.TestCase):
         )
         self.assertEqual(["Yang Zhang", "Xin Liang", "Yujun Feng"], parser.team_members)
         self.assertEqual(
-            {"DenseTopo-UNet", "PTU-Net"},
+            EXPECTED_EFFORTS,
             {card["data-project"] for card in parser.project_cards},
         )
-        self.assertEqual(2, len(parser.project_cards))
+        self.assertEqual(3, len(parser.project_cards))
         self.assertEqual(
-            {"DenseTopo-UNet", "PTU-Net"},
+            EXPECTED_EFFORTS,
             {card["heading"] for card in parser.project_cards},
         )
         self.assertEqual(
-            {("DenseTopo-UNet", "DenseTopo-UNet"), ("PTU-Net", "PTU-Net")},
+            {(name, name) for name in EXPECTED_EFFORTS},
             {(card["data-project"], card["heading"]) for card in parser.project_cards},
         )
+
+    def test_three_research_efforts_share_equal_structure_and_comparison(self) -> None:
+        parser = self.parse_site()
+        self.assertEqual(3, len(parser.project_details))
+        self.assertEqual(
+            {
+                ("densetopo", "DenseTopo-UNet", "DenseTopo-UNet"),
+                ("ptunet", "PTU-Net", "PTU-Net"),
+                (
+                    "quantization-interpolation",
+                    "Quantization-Aware Interpolation",
+                    "Quantization-Aware Interpolation",
+                ),
+            },
+            {
+                (detail["id"], detail["data-project"], detail["heading"])
+                for detail in parser.project_details
+            },
+        )
+        for detail in parser.project_details:
+            self.assertEqual("true", detail["has-question"], detail["id"])
+            self.assertEqual("true", detail["has-evidence"], detail["id"])
+            self.assertEqual("true", detail["has-links"], detail["id"])
+        self.assertEqual(
+            [
+                "Dimension",
+                "DenseTopo-UNet",
+                "PTU-Net",
+                "Quantization-Aware Interpolation",
+            ],
+            parser.comparison_headers,
+        )
+        self.assertGreaterEqual(len(parser.comparison_rows), 4)
+        self.assertTrue(all(len(row) == 4 for row in parser.comparison_rows))
+        copy = " ".join(parser.text).lower()
+        self.assertNotIn("two research projects", copy)
+        self.assertNotIn("two paths", copy)
 
     def test_local_references_are_relative_and_resolve(self) -> None:
         parser = self.parse_site()
@@ -360,6 +459,10 @@ class StaticSiteTests(unittest.TestCase):
         for token in (".skip-link", ":focus-visible", "outline", "@media (max-width: 820px)", "@media (max-width: 560px)", "@media (prefers-reduced-motion: reduce)"):
             self.assertIn(token, css)
         tablet, mobile = css_media(css, "(max-width: 820px)"), css_media(css, "(max-width: 560px)")
+        card_grid = css_rule(css, ".project-card-grid")
+        self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr))", card_grid)
+        responsive_cards = css_rule(tablet, ".project-card-grid")
+        self.assertIn("grid-template-columns: 1fr", responsive_cards)
         self.assertIn(".comparison-table tbody tr", tablet)
         self.assertIn("grid-template-columns: repeat(2", tablet)
         self.assertIn(".comparison-table tbody td", tablet)
@@ -386,7 +489,7 @@ class StaticSiteTests(unittest.TestCase):
             ".densetopo-card .project-dimension",
             ".densetopo-detail .project-number",
             ".densetopo-card .tag-list li",
-            ".comparison-table tbody td:nth-of-type(2)::before",
+            ".comparison-table tbody td::before",
         ):
             rule = css_rule(css, selector) or css_rule(css_media(css, "(max-width: 820px)"), selector)
             foreground = re.search(r"color:\s*(#[0-9a-fA-F]{6}|var\(--[\w-]+\))", rule)
@@ -479,11 +582,19 @@ class StaticSiteTests(unittest.TestCase):
 
     def test_project_evidence_notes_are_present(self) -> None:
         parser = self.parse_site()
-        self.assertEqual({"densetopo", "ptunet"}, set(parser.evidence_by_detail))
-        for detail, notes in parser.evidence_by_detail.items():
+        self.assertEqual(
+            {"densetopo", "ptunet", "quantization-interpolation"},
+            set(parser.evidence_by_detail),
+        )
+        for detail in ("densetopo", "ptunet"):
+            notes = parser.evidence_by_detail[detail]
             self.assertEqual(1, len(notes), detail)
             self.assertIn("alpha research software", notes[0].lower())
             self.assertIn("evaluation pending", notes[0].lower())
+        publication_notes = parser.evidence_by_detail["quantization-interpolation"]
+        self.assertEqual(1, len(publication_notes))
+        self.assertIn("peer-reviewed publication", publication_notes[0].lower())
+        self.assertIn("ipdps 2026", publication_notes[0].lower())
         copy = " ".join(parser.text).lower()
         self.assertIn("training-only reference and topology supervision", copy)
         self.assertIn("temporal reconstruction method", copy)
@@ -491,11 +602,10 @@ class StaticSiteTests(unittest.TestCase):
     def test_publication_identifies_pu_jiao_and_verified_record(self) -> None:
         parser = self.parse_site()
         title = "Mitigating Artifacts in Pre-quantization Based Scientific Data Compressors with Quantization-aware Interpolation"
-        self.assertEqual(["Publication", title], parser.section_headings.get("publications", []))
         copy = re.sub(
             r"\s+([,.;:])",
             r"\1",
-            " ".join(parser.section_text.get("publications", [])),
+            " ".join(parser.text),
         )
         self.assertIn(
             title,

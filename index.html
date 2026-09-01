@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="NSF research portfolio for deep-learning methods that mitigate artifacts in lossy-compressed scientific data.">
+  <meta name="description" content="NSF research portfolio for methods that mitigate artifacts in lossy-compressed scientific data.">
   <title>Deep Learning for Artifact Mitigation | NSF Research Portfolio</title>
   <link rel="stylesheet" href="assets/css/site.css">
 </head>
@@ -16,7 +16,6 @@
       <a href="#award">Award</a>
       <a href="#projects">Projects</a>
       <a href="#research">Research</a>
-      <a href="#publications">Publication</a>
       <a href="#team">Team</a>
     </nav>
   </header>
@@ -26,7 +25,7 @@
       <div class="hero-content">
         <p class="eyebrow">NSF Research Award</p>
         <h1 id="award-title">Deep Learning for Artifact Mitigation in Lossy-Compressed Scientific Data</h1>
-        <p class="hero-summary">A research portfolio for neural post-processing methods that address artifacts in already decompressed scientific fields.</p>
+        <p class="hero-summary">A research portfolio for complementary methods that address artifacts in lossy-compressed scientific data.</p>
         <p class="participants"><span>Participants</span> Yang Zhang, Xin Liang, and Yujun Feng</p>
         <div class="hero-actions" aria-label="Award links">
           <a class="button" href="#projects">Explore the projects</a>
@@ -37,11 +36,11 @@
       <dl class="summary-strip" aria-label="Award summary">
         <div>
           <dt>Portfolio</dt>
-          <dd>Two research projects</dd>
+          <dd>Three research efforts</dd>
         </div>
         <div>
-          <dt>Scientific fields</dt>
-          <dd>2D and 3D</dd>
+          <dt>Research contexts</dt>
+          <dd>2D, 3D, and compressors</dd>
         </div>
         <div>
           <dt>Shared objective</dt>
@@ -53,13 +52,13 @@
     <section class="section award-overview" aria-labelledby="award-overview-title">
       <p class="section-kicker">Award overview</p>
       <h2 id="award-overview-title">Post-processing decompressed scientific data</h2>
-      <p>Error-bounded lossy compression can reduce data movement and storage, while decompression artifacts can affect downstream numerical and topological analysis. This program investigates neural methods that operate on fields after decompression, with complementary 2D temporal and 3D topology-oriented directions.</p>
-      <p>The projects describe implemented research software and method boundaries. Their evaluation remains pending; this portfolio does not present benchmark, generalization, or performance claims.</p>
+      <p>Error-bounded lossy compression can reduce data movement and storage, while compression artifacts can affect downstream numerical and topological analysis. This program brings together complementary 2D temporal reconstruction, 3D topology-oriented restoration, and quantization-aware interpolation directions.</p>
+      <p>The portfolio distinguishes two implementation-backed neural software efforts from one publication-backed interpolation effort. Each is presented with its own evidence boundary; the site does not infer shared benchmark, generalization, or performance results.</p>
     </section>
 
     <section class="section projects" id="projects" aria-labelledby="projects-title">
-      <p class="section-kicker">Current projects</p>
-      <h2 id="projects-title">Two paths through artifact mitigation</h2>
+      <p class="section-kicker">Current research</p>
+      <h2 id="projects-title">Three complementary approaches to artifact mitigation</h2>
       <div class="project-card-grid">
         <article class="project-card densetopo-card" data-project="DenseTopo-UNet">
           <img class="project-wordmark" src="assets/images/densetopo-wordmark.svg" width="1200" height="260" loading="lazy" alt="DenseTopo-UNet wordmark for topology restoration of lossy-decompressed 3D scalar fields">
@@ -86,10 +85,26 @@
           </ul>
           <p class="card-links"><a href="#ptunet">Read the method</a> <a href="https://github.com/ExploreXploitQ/PTU-Net" target="_blank" rel="noreferrer">View repository</a></p>
         </article>
+
+        <article class="project-card interpolation-card" data-project="Quantization-Aware Interpolation">
+          <div class="project-identity" aria-label="IPDPS 2026 publication-backed research">
+            <span>Publication-backed research</span>
+            <strong>IPDPS 2026</strong>
+          </div>
+          <p class="project-dimension">Pre-quantization compressors</p>
+          <h3>Quantization-Aware Interpolation</h3>
+          <p>An IPDPS 2026 research effort, with Pu Jiao as first author, that studies artifacts in pre-quantization-based scientific data compressors and addresses them through quantization-aware interpolation.</p>
+          <ul class="tag-list" aria-label="Quantization-Aware Interpolation research tags">
+            <li>Scientific data compression</li>
+            <li>Artifact mitigation</li>
+            <li>Parallel interpolation</li>
+          </ul>
+          <p class="card-links"><a href="#quantization-interpolation">Read the research</a> <a href="https://doi.org/10.1109/IPDPS65963.2026.00024" target="_blank" rel="noreferrer">View DOI</a></p>
+        </article>
       </div>
     </section>
 
-    <article class="project-detail densetopo-detail" id="densetopo" aria-labelledby="densetopo-title">
+    <article class="project-detail densetopo-detail" id="densetopo" data-project="DenseTopo-UNet" aria-labelledby="densetopo-title">
       <div class="project-detail-intro">
         <p class="project-number">Project 01</p>
         <h2 id="densetopo-title">DenseTopo-UNet</h2>
@@ -115,7 +130,7 @@
       </figure>
     </article>
 
-    <article class="project-detail ptunet-detail" id="ptunet" aria-labelledby="ptunet-title">
+    <article class="project-detail ptunet-detail" id="ptunet" data-project="PTU-Net" aria-labelledby="ptunet-title">
       <div class="project-detail-intro">
         <p class="project-number">Project 02</p>
         <h2 id="ptunet-title">PTU-Net</h2>
@@ -141,55 +156,76 @@
       </figure>
     </article>
 
+    <article class="project-detail interpolation-detail" id="quantization-interpolation" data-project="Quantization-Aware Interpolation" aria-labelledby="quantization-interpolation-title">
+      <div class="project-detail-intro">
+        <p class="project-number">Project 03</p>
+        <h2 id="quantization-interpolation-title">Quantization-Aware Interpolation</h2>
+        <p class="project-question">How can quantization information guide artifact mitigation for pre-quantization-based scientific data compressors?</p>
+        <p>This publication-backed effort characterizes compression artifacts through the relationship between quantization indices and compression error, then applies quantization-aware interpolation to improve reconstructed scientific data.</p>
+        <ol class="method-flow" aria-label="Quantization-Aware Interpolation research flow">
+          <li>Characterize pre-quantization compression artifacts</li>
+          <li>Relate quantization indices to compression error</li>
+          <li>Apply quantization-aware interpolation</li>
+        </ol>
+        <ul class="capability-list">
+          <li>Focuses on artifacts produced by pre-quantization-based scientific data compressors.</li>
+          <li>Uses quantization information to guide interpolation.</li>
+          <li>Includes shared-memory and distributed-memory parallelization in the published method.</li>
+          <li>Is represented here by its peer-reviewed research record, not as a neural model or software repository.</li>
+        </ul>
+        <p class="evidence-note">Peer-reviewed publication · IPDPS 2026</p>
+        <p class="project-links"><a href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=egeD-DMAAAAJ&amp;sortby=pubdate&amp;citation_for_view=egeD-DMAAAAJ:4xDN1ZYqzskC" target="_blank" rel="noreferrer">Google Scholar record</a> <a href="https://doi.org/10.1109/IPDPS65963.2026.00024" target="_blank" rel="noreferrer">DOI</a></p>
+      </div>
+      <aside class="publication-record" aria-label="Publication record">
+        <p class="publication-venue">IPDPS 2026 · IEEE</p>
+        <p class="publication-title"><cite>Mitigating Artifacts in Pre-quantization Based Scientific Data Compressors with Quantization-aware Interpolation</cite></p>
+        <p class="publication-authors"><strong>Pu Jiao</strong>, Sheng Di, Jiannan Tian, Mingze Xia, Xuan Wu, Yang Zhang, Xin Liang, and Franck Cappello</p>
+        <p class="publication-meta">Proceedings of the 40th IEEE International Parallel and Distributed Processing Symposium, pages 144–158, 2026.</p>
+      </aside>
+    </article>
+
     <section class="section research-comparison" id="research" aria-labelledby="research-title">
       <p class="section-kicker">Shared research vision</p>
       <h2 id="research-title">Complementary research scope</h2>
-      <div class="comparison-table" role="region" aria-label="Comparison of the two research projects" tabindex="0">
+      <div class="comparison-table" role="region" aria-label="Comparison of the three research efforts" tabindex="0">
         <table>
           <thead>
             <tr>
               <th scope="col">Dimension</th>
-              <th scope="col">PTU-Net</th>
               <th scope="col">DenseTopo-UNet</th>
+              <th scope="col">PTU-Net</th>
+              <th scope="col">Quantization-Aware Interpolation</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <th scope="row">Scientific field</th>
-              <td>2D</td>
-              <td>3D</td>
+              <th scope="row">Research context</th>
+              <td>3D scalar fields</td>
+              <td>2D scientific fields</td>
+              <td>Pre-quantization-based scientific data compressors</td>
             </tr>
             <tr>
-              <th scope="row">Deployment input</th>
-              <td>Three adjacent decompressed fields</td>
-              <td>One decompressed volume</td>
+              <th scope="row">Portfolio evidence</th>
+              <td>Alpha research software · evaluation pending</td>
+              <td>Alpha research software · evaluation pending</td>
+              <td>Peer-reviewed IPDPS 2026 publication</td>
             </tr>
             <tr>
               <th scope="row">Primary artifact focus</th>
-              <td>Temporal and local reconstruction</td>
               <td>False critical-point topology</td>
+              <td>Temporal and local reconstruction</td>
+              <td>Artifacts in pre-quantization-based compressors</td>
             </tr>
             <tr>
-              <th scope="row">Neural design</th>
-              <td>Temporal baseline + transformer + gated U-Net</td>
+              <th scope="row">Technical framing</th>
               <td>Gated residual 3D U-Net</td>
+              <td>Temporal baseline + transformer + gated U-Net</td>
+              <td>Quantization-aware interpolation</td>
             </tr>
           </tbody>
         </table>
       </div>
       <p>These categories describe research scope and implementation design, not comparative performance.</p>
-    </section>
-
-    <section class="section publications" id="publications" aria-labelledby="publications-title">
-      <p class="section-kicker">Selected publication</p>
-      <h2 id="publications-title">Publication</h2>
-      <article class="publication-card">
-        <p class="publication-venue">IPDPS 2026 · IEEE</p>
-        <h3 class="publication-title"><cite>Mitigating Artifacts in Pre-quantization Based Scientific Data Compressors with Quantization-aware Interpolation</cite></h3>
-        <p class="publication-authors"><strong>Pu Jiao</strong>, Sheng Di, Jiannan Tian, Mingze Xia, Xuan Wu, Yang Zhang, Xin Liang, and Franck Cappello</p>
-        <p class="publication-meta">Proceedings of the 40th IEEE International Parallel and Distributed Processing Symposium, pages 144–158, 2026.</p>
-        <p class="publication-links"><a href="https://scholar.google.com/citations?view_op=view_citation&amp;hl=en&amp;user=egeD-DMAAAAJ&amp;sortby=pubdate&amp;citation_for_view=egeD-DMAAAAJ:4xDN1ZYqzskC" target="_blank" rel="noreferrer">Google Scholar record</a> <a href="https://doi.org/10.1109/IPDPS65963.2026.00024" target="_blank" rel="noreferrer">DOI</a></p>
-      </article>
     </section>
 
     <section class="section team" id="team" aria-labelledby="team-title">
@@ -205,7 +241,7 @@
 
   <footer class="site-footer">
     <p>This website is an NSF research portfolio.</p>
-    <p><a href="https://github.com/ExploreXploitQ/DenseTopo-UNet" target="_blank" rel="noreferrer">DenseTopo-UNet repository</a> <a href="https://github.com/ExploreXploitQ/PTU-Net" target="_blank" rel="noreferrer">PTU-Net repository</a></p>
+    <p><a href="https://github.com/ExploreXploitQ/DenseTopo-UNet" target="_blank" rel="noreferrer">DenseTopo-UNet repository</a> <a href="https://github.com/ExploreXploitQ/PTU-Net" target="_blank" rel="noreferrer">PTU-Net repository</a> <a href="https://doi.org/10.1109/IPDPS65963.2026.00024" target="_blank" rel="noreferrer">Quantization-Aware Interpolation DOI</a></p>
     <p>Any opinions, findings, and conclusions presented by these research projects are those of the authors and do not necessarily reflect the views of the National Science Foundation.</p>
   </footer>
 </body>

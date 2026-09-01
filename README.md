@@ -1,10 +1,10 @@
 # NSF Research Portfolio
 
-This repository contains a self-contained, English GitHub Pages site for the NSF research award **Deep Learning for Artifact Mitigation in Lossy-Compressed Scientific Data**. It presents the award and its two current research projects: DenseTopo-UNet for topology-oriented restoration of lossy-decompressed 3D scalar fields, and PTU-Net for temporal reconstruction of lossy-decompressed 2D scientific fields.
+This repository contains a self-contained, English GitHub Pages site for the NSF research award **Deep Learning for Artifact Mitigation in Lossy-Compressed Scientific Data**. It presents three research efforts at the same portfolio level: DenseTopo-UNet for topology-oriented restoration of lossy-decompressed 3D scalar fields, PTU-Net for temporal reconstruction of lossy-decompressed 2D scientific fields, and a publication record with Pu Jiao as first author on quantization-aware interpolation for pre-quantization-based scientific data compressors.
 
 ## Site structure
 
-The static page is served from `index.html` and uses one local stylesheet at `assets/css/site.css`. It includes an award overview, two project overview cards, detailed method sections, a shared research-scope comparison, a selected publication, and the participant list. There is no JavaScript runtime, build step, framework, package manager, remote font, or analytics dependency.
+The static page is served from `index.html` and uses one local stylesheet at `assets/css/site.css`. It includes an award overview, three equal research cards, three detailed research sections, a shared comparison, and the participant list. There is no JavaScript runtime, build step, framework, package manager, remote font, or analytics dependency.
 
 ## Local preview and tests
 
@@ -28,7 +28,7 @@ The publication metadata is linked to its Google Scholar record and the canonica
 
 ## Evidence policy
 
-The page describes implementation-backed method behavior only. DenseTopo-UNet and PTU-Net are identified as **Alpha research software · evaluation pending**. The site does not claim benchmark performance, speed, generalization, pretrained weights, compressor superiority, open-source licensing, or NSF endorsement of software outcomes.
+The page distinguishes evidence types explicitly. DenseTopo-UNet and PTU-Net are identified as **Alpha research software · evaluation pending**. Quantization-Aware Interpolation is represented by its peer-reviewed IPDPS 2026 publication record and is not described as a neural model, software release, or repository-backed implementation. The site does not infer shared benchmark performance, speed, generalization, pretrained weights, compressor superiority, open-source licensing, or NSF endorsement of research outcomes.
 
 ## Deployment
 

@@ -238,7 +238,6 @@ h3 {
 .hero-actions,
 .card-links,
 .project-links,
-.publication-links,
 .site-footer p:nth-child(2) {
   display: flex;
   flex-wrap: wrap;
@@ -351,7 +350,7 @@ h3 {
 
 .project-card-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.5rem;
   margin-top: 2rem;
 }
@@ -380,7 +379,10 @@ h3 {
 
 .ptunet-card {
   border-top-color: var(--blue-500);
-  border-right: 0.35rem solid var(--gold-500);
+}
+
+.interpolation-card {
+  border-top-color: var(--gold-500);
 }
 
 .project-wordmark {
@@ -389,6 +391,32 @@ h3 {
   margin-bottom: 1.3rem;
   object-fit: contain;
   object-position: left center;
+}
+
+.project-identity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  height: 3.7rem;
+  margin-bottom: 1.3rem;
+  padding: 0.65rem 0.8rem;
+  color: var(--navy-900);
+  background: rgb(215 174 56 / 0.12);
+  border-left: 0.25rem solid var(--gold-500);
+  font-size: 0.72rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.project-identity span {
+  max-width: 10rem;
+}
+
+.project-identity strong {
+  flex: 0 0 auto;
+  color: #7a5a00;
+  letter-spacing: 0.04em;
 }
 
 .project-dimension {
@@ -401,6 +429,11 @@ h3 {
 
 .ptunet-card .project-dimension {
   color: var(--blue-700);
+}
+
+.interpolation-card .project-dimension,
+.interpolation-detail .project-number {
+  color: #7a5a00;
 }
 
 .ptunet-detail .project-number::after {
@@ -444,6 +477,11 @@ h3 {
 .densetopo-card .tag-list li {
   color: #076d64;
   background: rgb(13 143 131 / 0.1);
+}
+
+.interpolation-card .tag-list li {
+  color: #755a09;
+  background: rgb(215 174 56 / 0.15);
 }
 
 .card-links {
@@ -535,6 +573,15 @@ h3 {
   background: #076d64;
 }
 
+.interpolation-detail .method-flow li {
+  background: rgb(215 174 56 / 0.08);
+  border-color: rgb(215 174 56 / 0.32);
+}
+
+.interpolation-detail .method-flow li::before {
+  background: #7a5a00;
+}
+
 .capability-list {
   display: grid;
   gap: 0.6rem;
@@ -561,6 +608,10 @@ h3 {
 
 .densetopo-detail .capability-list li::before {
   background: var(--teal-600);
+}
+
+.interpolation-detail .capability-list li::before {
+  background: var(--gold-500);
 }
 
 .evidence-note {
@@ -634,7 +685,7 @@ h3 {
 
 table {
   width: 100%;
-  min-width: 38rem;
+  min-width: 52rem;
   border-collapse: collapse;
   text-align: left;
 }
@@ -661,6 +712,10 @@ thead th:nth-child(3) {
   color: #dceeff;
 }
 
+thead th:nth-child(4) {
+  color: #fff0c2;
+}
+
 tbody th {
   width: 24%;
   color: var(--navy-900);
@@ -677,13 +732,10 @@ tbody tr:last-child td {
   border-bottom: 0;
 }
 
-.publications {
-  border-top: 1px solid var(--rule);
-}
-
-.publication-card {
-  max-width: 58rem;
-  margin-top: 2rem;
+.publication-record {
+  align-self: center;
+  min-width: 0;
+  margin: 0;
   padding: clamp(1.5rem, 4vw, 2.35rem);
   background: var(--surface);
   border: 1px solid var(--rule);
@@ -727,10 +779,6 @@ tbody tr:last-child td {
 
 .publication-meta {
   margin-bottom: 1.25rem;
-}
-
-.publication-links a {
-  font-weight: 750;
 }
 
 .team {
@@ -819,7 +867,10 @@ tbody tr:last-child td {
     grid-row: 2;
   }
 
-  .project-card-grid,
+  .project-card-grid {
+    grid-template-columns: 1fr;
+  }
+
   .project-detail,
   .team-list {
     grid-template-columns: 1fr;
@@ -902,8 +953,8 @@ tbody tr:last-child td {
   }
 
   .comparison-table tbody td::before {
-    color: var(--blue-700);
-    content: "PTU-Net";
+    color: #076d64;
+    content: "DenseTopo-UNet";
     font-size: 0.72rem;
     font-weight: 850;
     letter-spacing: 0.08em;
@@ -912,8 +963,13 @@ tbody tr:last-child td {
   }
 
   .comparison-table tbody td:nth-of-type(2)::before {
-    color: #076d64;
-    content: "DenseTopo-UNet";
+    color: var(--blue-700);
+    content: "PTU-Net";
+  }
+
+  .comparison-table tbody td:nth-of-type(3)::before {
+    color: #755a09;
+    content: "Quantization-Aware Interpolation";
   }
 }
 
