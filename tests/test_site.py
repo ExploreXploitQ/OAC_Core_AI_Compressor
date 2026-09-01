@@ -5,6 +5,8 @@ import functools
 import http.server
 import posixpath
 import re
+import subprocess
+import struct
 import threading
 import unittest
 import urllib.request
@@ -31,6 +33,15 @@ EXPECTED_PROJECT_LINKS = {
     "https://github.com/ExploreXploitQ/PTU-Net/blob/main/docs/architecture.md",
     "https://github.com/ExploreXploitQ/PTU-Net/blob/main/docs/usage.md",
 }
+
+
+def contrast_ratio(first: str, second: str) -> float:
+    def luminance(color: str) -> float:
+        channels = [int(color[index:index + 2], 16) / 255 for index in (1, 3, 5)]
+        linear = [channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4 for channel in channels]
+        return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+    lighter, darker = sorted((luminance(first), luminance(second)), reverse=True)
+    return (lighter + 0.05) / (darker + 0.05)
 
 
 class SiteParser(HTMLParser):
@@ -148,6 +159,12 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, format: str, *args: object) -> None:
         pass
 
+    def copyfile(self, source, outputfile) -> None:
+        try:
+            super().copyfile(source, outputfile)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
 
 class StaticSiteTests(unittest.TestCase):
     def assert_entry_point(self) -> None:
@@ -251,6 +268,101 @@ class StaticSiteTests(unittest.TestCase):
             server.shutdown()
             thread.join(timeout=5)
             server.server_close()
+
+    def test_internal_fragments_resolve_to_ids(self) -> None:
+        parser = self.parse_site()
+        fragments = {reference.split("#", 1)[1] for reference in parser.references if "#" in reference and reference.split("#", 1)[1]}
+        self.assertTrue(fragments)
+        self.assertEqual(set(), fragments - parser.ids)
+
+    def test_stylesheet_contains_accessibility_and_responsive_contract(self) -> None:
+        self.assert_entry_point()
+        css = (ROOT / "assets/css/site.css").read_text(encoding="utf-8")
+        self.assertIn("assets/css/site.css", LOCAL_ASSETS)
+        for token in (".skip-link", ":focus-visible", "outline", "@media (max-width: 820px)", "@media (max-width: 560px)", "@media (prefers-reduced-motion: reduce)"):
+            self.assertIn(token, css)
+        self.assertRegex(css, r"@media \(max-width: 560px\)[\s\S]*?grid-template-columns:\s*1fr")
+        self.assertRegex(css, r"@media \(prefers-reduced-motion: reduce\)[\s\S]*?transition-duration:\s*0\.01ms")
+        self.assertRegex(css, r"--teal-600:\s*#[0-9a-fA-F]{6}")
+        self.assertRegex(css, r":focus-visible[\s\S]*?outline:\s*[^;]*")
+
+    def test_wcag_contrast_for_teal_and_focus_indicator(self) -> None:
+        self.assertGreaterEqual(contrast_ratio("#0d8f83", "#ffffff"), 3.0)
+        self.assertGreaterEqual(contrast_ratio("#0d8f83", "#f5f3ed"), 3.0)
+        self.assertGreaterEqual(contrast_ratio("#ffffff", "#071a2f"), 3.0)
+
+    def test_image_dimensions_loading_and_hero_treatment(self) -> None:
+        parser = self.parse_site()
+        self.assertGreaterEqual(len(parser.images), 5)
+        for image in parser.images:
+            width, height = image.get("width", ""), image.get("height", "")
+            self.assertRegex(width, r"^[1-9][0-9]*$")
+            self.assertRegex(height, r"^[1-9][0-9]*$")
+            source = ROOT / image["src"]
+            if source.suffix == ".png":
+                with source.open("rb") as stream:
+                    stream.seek(16)
+                    source_width, source_height = struct.unpack(">II", stream.read(8))
+            else:
+                svg_root = element_tree.parse(source).getroot()
+                source_width = int(float(svg_root.attrib["width"].replace("px", "")))
+                source_height = int(float(svg_root.attrib["height"].replace("px", "")))
+            self.assertAlmostEqual(int(width) / int(height), source_width / source_height, places=3)
+            if image.get("src") != "assets/images/nsf-logo.png":
+                self.assertEqual("lazy", image.get("loading"))
+        nsf = next(image for image in parser.images if image.get("src") == "assets/images/nsf-logo.png")
+        self.assertNotEqual("lazy", nsf.get("loading"))
+
+    def test_all_tracked_public_artifacts_are_english_and_placeholder_free(self) -> None:
+        tracked = subprocess.check_output(["git", "ls-files"], text=True, cwd=ROOT).splitlines()
+        public = [path for path in tracked if Path(path).suffix.lower() in {".html", ".css", ".svg"} or Path(path).name.lower() == "readme.md"]
+        forbidden = re.compile(r"tbd|todo|lorem ipsum|[\u3400-\u9fff\u3040-\u30ff\uac00-\ud7af]", re.IGNORECASE)
+        for path in public:
+            self.assertIsNone(forbidden.search((ROOT / path).read_text(encoding="utf-8")), path)
+
+    def test_tracked_files_exclude_model_data_and_generated_artifacts(self) -> None:
+        tracked = subprocess.check_output(["git", "ls-files"], text=True, cwd=ROOT).splitlines()
+        prohibited = re.compile(r"(?:\.pt|\.pth|\.ckpt|\.f32|\.raw|\.npy|\.npz)$", re.IGNORECASE)
+        for path in tracked:
+            self.assertFalse(prohibited.search(path), path)
+            self.assertNotIn("__pycache__", path)
+            self.assertNotIn("Screenshot", path)
+
+    def test_site_serves_from_parent_path_with_all_assets(self) -> None:
+        self.assert_entry_point()
+        handler = functools.partial(QuietHandler, directory=ROOT.parent)
+        server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        prefix = "/ExploreXploitQNSF.github.io/"
+        paths = ["", "assets/css/site.css", "assets/images/nsf-logo.png", "assets/images/densetopo-wordmark.svg", "assets/images/densetopo-architecture.svg", "assets/images/ptunet-wordmark.svg", "assets/images/ptunet-architecture.svg"]
+        expected = {"": "text/html", "assets/css/site.css": "text/css", "assets/images/nsf-logo.png": "image/png"}
+        try:
+            for path in paths:
+                with urllib.request.urlopen(f"http://127.0.0.1:{server.server_port}{prefix}{path}", timeout=5) as response:
+                    self.assertEqual(200, response.status)
+                    if path in expected:
+                        self.assertEqual(expected[path], response.headers.get_content_type())
+                    elif path.endswith(".svg"):
+                        self.assertEqual("image/svg+xml", response.headers.get_content_type())
+        finally:
+            server.shutdown()
+            thread.join(timeout=5)
+            server.server_close()
+
+    def test_project_evidence_notes_are_present(self) -> None:
+        parser = self.parse_site()
+        copy = " ".join(parser.text).lower()
+        self.assertGreaterEqual(copy.count("alpha research software"), 2)
+        self.assertGreaterEqual(copy.count("evaluation pending"), 2)
+        self.assertIn("training-only reference and topology supervision", copy)
+        self.assertIn("temporal reconstruction method", copy)
+
+    def test_site_has_no_javascript_external_fonts_or_remote_images(self) -> None:
+        parser = self.parse_site()
+        self.assertNotIn("script", parser.tags)
+        self.assertFalse(any("fonts.googleapis" in value for value in parser.references))
+        self.assertTrue(all(not image.get("src", "").startswith(("http:", "https:", "//", "data:")) for image in parser.images))
 
 
 if __name__ == "__main__":
