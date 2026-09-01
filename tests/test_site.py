@@ -328,7 +328,14 @@ class StaticSiteTests(unittest.TestCase):
             ["Deep Learning for Artifact Mitigation in Lossy-Compressed Scientific Data"],
             parser.section_headings.get("award", []),
         )
-        self.assertEqual(["Yang Zhang", "Xin Liang", "Yujun Feng"], parser.team_members)
+        self.assertEqual(
+            ["Yang Zhang", "Xin Liang", "Yujun Feng", "Pu Jiao"],
+            parser.team_members,
+        )
+        self.assertIn(
+            "Participants Yang Zhang, Xin Liang, Yujun Feng, and Pu Jiao",
+            " ".join(parser.section_text["award"]),
+        )
         self.assertEqual(
             EXPECTED_EFFORTS,
             {card["data-project"] for card in parser.project_cards},
@@ -461,8 +468,14 @@ class StaticSiteTests(unittest.TestCase):
         tablet, mobile = css_media(css, "(max-width: 820px)"), css_media(css, "(max-width: 560px)")
         card_grid = css_rule(css, ".project-card-grid")
         self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr))", card_grid)
+        team_rules = re.findall(r"\.team-list\s*\{([^{}]*)\}", css)
+        self.assertTrue(
+            any("grid-template-columns: repeat(4, 1fr)" in rule for rule in team_rules)
+        )
         responsive_cards = css_rule(tablet, ".project-card-grid")
         self.assertIn("grid-template-columns: 1fr", responsive_cards)
+        responsive_team = css_rule(tablet, ".team-list")
+        self.assertIn("grid-template-columns: 1fr", responsive_team)
         self.assertIn(".comparison-table tbody tr", tablet)
         self.assertIn("grid-template-columns: repeat(2", tablet)
         self.assertIn(".comparison-table tbody td", tablet)
